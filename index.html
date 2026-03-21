@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Twin Forestale</title>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: radial-gradient(1200px 700px at 20% 10%, #122019 0%, #0c1110 55%, #070b0a 100%);
+        color: #e7f0ec;
+      }
+      .boot {
+        min-height: 100%;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+      }
+      .boot-card {
+        width: min(920px, 92vw);
+        border: 1px solid #24332e;
+        border-radius: 16px;
+        background: rgba(15, 22, 20, 0.55);
+        padding: 14px 14px;
+      }
+      .boot-title {
+        font-size: 12px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #a9b9b2;
+      }
+      .boot-body {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #dbe6e1;
+        line-height: 1.45;
+      }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="boot" class="boot">
+      <div class="boot-card">
+        <div class="boot-title">Caricamento UI</div>
+        <div class="boot-body">
+          Se questa schermata resta visibile e la UI non appare, il browser sta probabilmente bloccando i moduli JS (antivirus, estensione, shield).
+          <div style="margin-top:10px" class="mono">DevTools (F12) → Console/Network: cerca ERR_BLOCKED_BY_CLIENT o errori su /@vite/client e /src/main.tsx</div>
+          <div id="boot-check" style="margin-top:12px" class="mono"></div>
+          <div id="boot-errors" style="margin-top:12px;white-space:pre-wrap;color:#ffb4b4" class="mono"></div>
+        </div>
+        <noscript>
+          <div style="margin-top:10px;color:#ffb4b4">JavaScript e disattivato: la simulazione richiede JS attivo.</div>
+        </noscript>
+      </div>
+    </div>
+    <script>
+      // Keep boot visible until the React app removes it.
+      // Also probe the usual Vite endpoints to hint at what is being blocked.
+      (function () {
+        var el = document.getElementById('boot-check')
+        var errEl = document.getElementById('boot-errors')
+        if (!el) return
+        function line(s) {
+          el.textContent += s + "\n"
+        }
+        function errLine(s) {
+          if (!errEl) return
+          errEl.textContent += s + "\n"
+        }
+
+        window.addEventListener('error', function (e) {
+          errLine("window.error: " + (e && e.message ? e.message : String(e)))
+        })
+        window.addEventListener('unhandledrejection', function (e) {
+          errLine("unhandledrejection: " + (e && e.reason ? String(e.reason) : ""))
+        })
+
+        function probe(url) {
+          return fetch(url, { cache: 'no-store' })
+            .then(function (r) { return r.ok ? "OK " + r.status : "FAIL " + r.status })
+            .catch(function (e) { return "ERR " + (e && e.message ? e.message : String(e)) })
+        }
+        line("Probe:")
+        Promise.all([
+          probe("/@vite/client"),
+          probe("/src/main.tsx"),
+          probe("/src/styles.css"),
+          // Common Vite deps that must import for React to mount:
+          probe("/node_modules/.vite/deps/react.js"),
+          probe("/node_modules/.vite/deps/react-dom_client.js"),
+          probe("/node_modules/.vite/deps/@react-three_fiber.js"),
+          probe("/node_modules/.vite/deps/three.js")
+        ]).then(function (res) {
+          line("/@vite/client  -> " + res[0])
+          line("/src/main.tsx  -> " + res[1])
+          line("/src/styles.css-> " + res[2])
+          line("react.js       -> " + res[3])
+          line("react-dom      -> " + res[4])
+          line("r3f            -> " + res[5])
+          line("three.js       -> " + res[6])
+          line("")
+          line("Se /@vite/client o /src/main.tsx non sono OK, disattiva estensioni (adblock/shields) per localhost o aggiungi eccezione nell'antivirus.")
+        })
+      })();
+    </script>
+    <script type="module">
+      // Load the app via dynamic import so we can surface import errors in-page.
+      // This also avoids cases where the module fetch works but execution is blocked.
+      const errEl = document.getElementById('boot-errors')
+      const boot = document.getElementById('boot')
+      function errLine(s) {
+        if (!errEl) return
+        errEl.textContent += s + "\n"
+      }
+      try {
+        await import('/src/main.tsx')
+        // If the app didn't remove it (e.g. it mounted but forgot), remove it here.
+        boot?.remove()
+      } catch (e) {
+        errLine("import('/src/main.tsx') failed:")
+        const msg = String(e && e.stack ? e.stack : e)
+        errLine(msg)
+
+        // Try to extract the failing URL and fetch it to reveal status/content-type.
+        const m = msg.match(/https?:\/\/[^\s)"]+/)
+        const url = m ? m[0] : null
+        if (url) {
+          errLine("")
+          errLine("debug fetch -> " + url)
+          try {
+            const r = await fetch(url, { cache: 'no-store' })
+            errLine("status: " + r.status + " " + (r.ok ? "(ok)" : "(not ok)"))
+            errLine("content-type: " + (r.headers.get('content-type') || ""))
+            const text = await r.text()
+            errLine("body head:")
+            errLine(text.slice(0, 240))
+
+            // Dependency import triage (recursive): find the first module in the chain that fails to import.
+            const visited = new Set()
+            const maxDepth = 5
+            const maxModules = 60
+
+            function parseImports(jsText) {
+              const out = []
+              // import ... from "x"
+              let m1
+              const re1 = /import\s+[^'"]*from\s+["']([^"']+)["']/g
+              while ((m1 = re1.exec(jsText)) && out.length < 40) out.push(m1[1])
+              // bare import "x"
+              let m2
+              const re2 = /import\s+["']([^"']+)["']/g
+              while ((m2 = re2.exec(jsText)) && out.length < 60) out.push(m2[1])
+              return out
+            }
+
+            async function triage(spec, depth) {
+              if (visited.has(spec)) return null
+              visited.add(spec)
+              if (visited.size > maxModules) return { spec, reason: "limit reached" }
+
+              try {
+                await import(spec)
+                return null
+              } catch (ie) {
+                errLine("FAIL " + spec)
+                errLine(String(ie && ie.stack ? ie.stack : ie))
+                // Try fetching module text (may still be allowed even if module-loader blocks it).
+                try {
+                  const rr = await fetch(spec, { cache: 'no-store' })
+                  errLine("fetch " + spec + " -> " + rr.status + " " + (rr.headers.get('content-type') || ""))
+                  const js = await rr.text()
+                  if (depth >= maxDepth) return { spec, reason: "max depth" }
+                  const deps = parseImports(js)
+                  if (!deps.length) return { spec, reason: "no imports" }
+                  // Walk deps to find first failing leaf.
+                  for (let i = 0; i < deps.length; i++) {
+                    const d = deps[i]
+                    const res = await triage(d, depth + 1)
+                    if (res) return res
+                  }
+                } catch (fe2) {
+                  errLine("fetch " + spec + " failed: " + String(fe2 && fe2.message ? fe2.message : fe2))
+                }
+                return { spec, reason: "import failed" }
+              }
+            }
+
+            const specs = parseImports(text)
+            if (specs.length) {
+              errLine("")
+              errLine("dependency triage:")
+              for (let i = 0; i < specs.length; i++) {
+                const spec = specs[i]
+                if (visited.has(spec)) continue
+                const res = await triage(spec, 1)
+                if (res) break
+                errLine("OK   " + spec)
+              }
+            }
+          } catch (fe) {
+            errLine("fetch failed: " + String(fe && fe.message ? fe.message : fe))
+          }
+        }
+      }
+    </script>
+    <script type="module">
+      // If module scripts run, this will execute. If not, it's a strong signal of a module-specific block.
+      window.__VITE_MODULE_OK__ = true
+      var el = document.getElementById('boot-check')
+      if (el) el.textContent += "inline module -> OK\n"
+    </script>
+  </body>
+</html>
