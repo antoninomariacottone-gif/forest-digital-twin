@@ -22,6 +22,10 @@ function createMainWindow() {
     },
   })
 
+  // Professional feel: no default application menu.
+  win.removeMenu()
+  win.setMenuBarVisibility(false)
+
   win.once('ready-to-show', () => win.show())
 
   if (isDev) {
