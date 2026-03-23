@@ -17,6 +17,20 @@ npm run build
 npm run preview
 ```
 
+## App Desktop (Windows)
+
+Modalita sviluppo (apre una finestra come app):
+
+```powershell
+npm run desktop:dev
+```
+
+Build installer (crea un setup in `release/` con collegamento Desktop/Start Menu):
+
+```powershell
+npm run desktop:build
+```
+
 ## Uso rapido
 
 - Tab **Terreno**: imposta suolo (tipologia, umidita, NPK, pH, temperatura + stagioni, topografia/ombre) e clima (pioggia/vento/probabilita eventi). Usa **Rigenera terreno** per ricreare topografia e patch degradate.
@@ -37,4 +51,3 @@ npm run preview
 
 - Il motore ecologico e un modello “toy ma coerente” (risorse, competizione locale, mortalita, semi, stagioni, eventi casuali).
 - La UI blocca interventi non misurati: senza sensori l’AI resta limitata e l’overlay evidenzia le aree senza dati.
-

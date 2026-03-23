@@ -3,15 +3,23 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "desktop:dev": "cross-env VITE_DEV_SERVER_URL=http://localhost:5173 concurrently -k \"vite --port 5173 --strictPort\" \"wait-on http://localhost:5173 && electron .\"",
+    "desktop:build": "npm run build && electron-builder -w"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.183.1",
+    "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
+    "electron": "^35.1.5",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^8.0.4",
     "typescript": "~5.9.3",
     "vite": "^7.3.1"
   },
@@ -23,5 +31,33 @@
     "recharts": "^3.8.0",
     "three": "^0.183.2",
     "zustand": "^5.0.11"
+  },
+  "build": {
+    "appId": "com.forestcompany.digitaltwinforest",
+    "productName": "Digital Twin Forestale",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "build/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Digital Twin Forestale"
+    }
   }
 }
