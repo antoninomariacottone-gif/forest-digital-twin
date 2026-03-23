@@ -31,6 +31,8 @@ Build installer (crea un setup in `release/` con collegamento Desktop/Start Menu
 npm run desktop:build
 ```
 
+Se `desktop:dev` dice "Port ... already in use", chiudi l'altro server Vite (altra finestra terminale) oppure cambia porta.
+
 ## Uso rapido
 
 - Tab **Terreno**: imposta suolo (tipologia, umidita, NPK, pH, temperatura + stagioni, topografia/ombre) e clima (pioggia/vento/probabilita eventi). Usa **Rigenera terreno** per ricreare topografia e patch degradate.
