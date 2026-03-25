@@ -17,6 +17,13 @@ npm run build
 npm run preview
 ```
 
+## Link pubblico (GitHub Pages)
+
+Questo repository e configurato per fare deploy automatico su GitHub Pages ad ogni push su `main`.
+Dopo il primo deploy, il link sara:
+
+`https://antoninomariacottone-gif.github.io/forest-digital-twin/`
+
 ## App Desktop (Windows)
 
 Modalita sviluppo (apre una finestra come app):
